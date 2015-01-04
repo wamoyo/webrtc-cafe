@@ -3,6 +3,7 @@
 WebRTC Café is a bare bones demo of WebRTC built with Node.js (for signaling), HTML, CSS and JavaScript.
 
 WebRTC spec: [http://www.w3.org/TR/webrtc](http://www.w3.org/TR/webrtc)
+
 WebRTC talk by Chris Wilson: [https://www.youtube.com/watch?v=3Ifbqaw5l_I](https://www.youtube.com/watch?v=3Ifbqaw5l_I)
 
 ## Overview
