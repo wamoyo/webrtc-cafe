@@ -1,6 +1,6 @@
 # WebRTC Café
 
-WebRTC Café is a bare bones demo of WebRTC built with Node.js (for signaling), HTML, CSS and Javascript.
+WebRTC Café is a bare bones demo of WebRTC built with Node.js (for signaling), HTML, CSS and JavaScript.
 
 WebRTC spec: http://www.w3.org/TR/webrtc
 
@@ -15,7 +15,7 @@ WebRTC encompasses quite a few major achievements by tech companies and engineer
 WebRTC has four main tasks:
 
 1. [Acquire Video and Audio](#1-acquiring-video-and-audio)
-2. [Establish a connection between peers](#)
+2. [Establish a connection between peers](#2-establishing-a-connection-between-peers)
 3. [Send and receive audio and video data](#)
 4. [Send and receive arbitrary data](#)
 
@@ -31,7 +31,7 @@ This one is fun and easy, and you should try it for yourself right now ツ
 
 The reason we're muting here is to avoid feedback (that loud squeaking when a microphone gets close to a speaker).
 
-#### Javascript
+#### JavaScript
 
 ```javascript
 navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
@@ -60,4 +60,8 @@ _Be aware, sometimes `file://my-attempt.html` will not work, you'll need to serv
 With only this, you can build a phonebooth application, or a 'take a photo' feature for when users set up a new profile with your website, and a fun bunch of other things.
 
 Check out the spec on _Media Capture and Streams_ for full details on the **Contraints Object** the **Stream** provided by the getUserMedia success handler and more: http://w3c.github.io/mediacapture-main/getusermedia.html
+
+## 2. Establishing a Connection Between Peers
+
+Okay, not let's get to the tricky awesome stuff. Although, WebRTC is peer-to-peer, you still need a way to identify a few things about the peer you're connecting to, like where they are in the networking, how to deal with their firewall if they have one, what type of video codec they support and so forth. Servers are used to negotiate all this, and establish a connection between peers. The terms used for this is called **Signaling**.
 
