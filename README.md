@@ -14,12 +14,12 @@ WebRTC encompasses quite a few major achievements by tech companies and engineer
 
 WebRTC has four main tasks:
 
-1. Acquire Video and Audio.
+1. [Acquire Video and Audio.](#one)
 2. Establish a connection between peers.
 3. Send and receive audio and video data.
 4. Send and receive arbitrary data.
 
-## 1. Acquiring Video and Audio
+## <a name="one"></a>1. Acquiring Video and Audio
 
 This one is fun and easy, and you should try it for yourself right now ツ
 
