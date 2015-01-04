@@ -53,6 +53,8 @@ So getUserMedia accepts three parameters, the first is a **Constraints Object**,
 
 In our example we're asking for audio, but providing the `muted` attribute to the video element so that the audio doesn't play. Feel free to remove it. You should here some echoing and maybe some feedback noise.
 
+_Be aware, sometimes `file://my-attempt.html` will not work, you'll need to serve up your html over http to get this working._ I'd recommend https://www.npmjs.com/package/http-server
+
 **Great, now we've grabbed our own webcam and mic video and audio and displayed them in a video element!
 
 With only this, you can build a phonebooth application, or a 'take a photo' feature for when users set up a new profile with your website, and a fun bunch of other things.
