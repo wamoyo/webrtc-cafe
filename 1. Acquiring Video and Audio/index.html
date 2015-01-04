@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WebRTC Café</title>
+    <meta name="description" content="A bare bones demo of WebRTC built with Node.js (for signaling), HTML, CSS and Javascript.">
+    <meta name="viewport" content="width=device-width">
+  </head>
+  <body>
+    <video id="myVideo" muted autoplay></video>
+    <script>
+      ;(function () {
+        "use strict";
+        window.addEventListener('load', function (event) {
+
+          navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
+
+          navigator.getUserMedia({
+            video: true,
+            audio: true
+          }, function (myWebcamStream) {
+            var url = window.URL.createObjectURL(myWebcamStream);
+            window.stream = myWebcamStream; // Make stream available to the console (optional).
+            var myVideo = document.getElementById('myVideo');
+            myVideo.src = url;
+            myVideo.play();
+          }, function (error) {
+            console.log("navigator.getUserMedia error: ", error);
+          });
+
+        }, false);
+      }());
+    </script>
+  </body>
+</html>
+
