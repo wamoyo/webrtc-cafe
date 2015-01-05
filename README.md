@@ -6,6 +6,8 @@ WebRTC spec: http://www.w3.org/TR/webrtc
 
 WebRTC talk by Chris Wilson: https://www.youtube.com/watch?v=3Ifbqaw5l_I
 
+Article on Signaling by Sam Dutton: http://www.html5rocks.com/en/tutorials/webrtc/infrastructure
+
 ## Overview
 
 WebRTC encompasses quite a few major achievements by tech companies and engineers. WebRTC is a term that covers a collection of technologies that when used together enable real-time, peer-to-peer communications native to the web. The implications of which are actually quite incredible.
