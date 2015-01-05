@@ -15,7 +15,7 @@
 
           var isInitiator;
 
-          room = prompt('Enter room name:');
+          var room = prompt('Enter room name:');
 
           var socket = io.connect();
 
@@ -39,7 +39,7 @@
           });
 
           socket.on('log', function (array){
-            console.log(array);
+            console.log.apply(console, array);
           });
 
         }, false);

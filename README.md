@@ -1,12 +1,12 @@
 # WebRTC Café
 
-WebRTC Café is a bare bones demo of WebRTC built with Node.js (for signaling), HTML, CSS and JavaScript.
+WebRTC Café is a bare bones demo of WebRTC built with Node.js, Socket.io, HTML, CSS and JavaScript.
+
+To run the examples just clone the repo, cd into each section, then run the js file with node, or run a simple `http-server` (I'd recommend https://www.npmjs.com/package/http-server). You'll need to serve up your example, you can't run them on `file://...`
 
 WebRTC spec: http://www.w3.org/TR/webrtc
 
 WebRTC talk by Chris Wilson: https://www.youtube.com/watch?v=3Ifbqaw5l_I
-
-Article on Signaling by Sam Dutton: http://www.html5rocks.com/en/tutorials/webrtc/infrastructure
 
 ## Overview
 
@@ -18,6 +18,8 @@ WebRTC has four main tasks:
 
 1. [Acquire Video and Audio](#1-acquiring-video-and-audio)
 2. [Establish a connection between peers](#2-establishing-a-connection-between-peers)
+  1. [Within a LAN](#)
+  2. [Across the Internet](#) 
 3. [Send and receive audio and video data](#)
 4. [Send and receive arbitrary data](#)
 
@@ -65,5 +67,11 @@ Check out the spec on _Media Capture and Streams_ for full details on the **Cont
 
 ## 2. Establishing a Connection Between Peers
 
-Okay, not let's get to the tricky awesome stuff. Although, WebRTC is peer-to-peer, you still need a way to identify a few things about the peer you're connecting to, like where they are in the networking, how to deal with their firewall if they have one, what type of video codec they support and so forth. Servers are used to negotiate all this, and establish a connection between peers. The terms used for this is called **Signaling**.
+Okay, not let's get to the tricky awesome stuff. Although, WebRTC is peer-to-peer, you still need a way to identify a few things about the peer you're connecting to, like where they are in the network, how to deal with their firewall if they have one, what type of video codec they support and so forth. Servers are used to negotiate all this, and establish a connection between peers. The terms used for this is called **Signaling**. You'll also need a way for your app to know who wants to talk to who...
+
+We'll use a server for this, Node.js + Socket.io in our case.
+
+### Establishing a connection within a Local Area Network
+
+### Adding signaling to get WebRTC working across the Internet
 

@@ -6,7 +6,7 @@ var fs = require('fs');
 
 var server = http.createServer(function (req, res) {
   if (req.url ==='/') {
-    fs.readFile('index.html', function (err, html) {
+    fs.readFile('signaling-test.html', function (err, html) {
       res.writeHeader(200, {"Content-Type": "text/html"});
       return res.end(html);
     });
@@ -16,7 +16,7 @@ var server = http.createServer(function (req, res) {
 });
 
 server.listen(3000, function () {
-  console.log('Jumping on port 8000!');
+  console.log('Jumping on port 3000!');
 });
 
 var io = require('socket.io')(server);
@@ -39,7 +39,10 @@ io.sockets.on('connection', function (socket) {
   });
 
   socket.on('create or join', function (room) {
-    var numClients = io.sockets.clients(room).length;
+    if (io.sockets.adapter.rooms[room]) {
+      var numClients = io.sockets.adapter.rooms[room].length;
+    }
+    //var numClients = io.sockets.clients(room).length; // old socket.io code
 
     log('Room ' + room + ' has ' + numClients + ' client(s)');
     log('Request to create or join room ' + room);
