@@ -6,10 +6,15 @@
     <meta name="description" content="WebRTC within LAN">
     <meta name="viewport" content="width=device-width">
     <script src="/socket.io/socket.io.js"></script>
+    <!-- tiny bit of styling -->
     <style type="text/css">
-      html {font-size: 100%;}
       * {box-sizing: border-box; margin:0.25em;}
-      video {width:40%; box-shadow: 0 0 2px rgba(0,0,0,0.8);}
+      html {font-size: 100%; background: #f8f8f8; height: 100%; margin: 0;}
+      body { min-height: 100%; box-shadow: inset 0 0 6px rgba(0,0,0,0.8); margin: 0; padding: 25px;}
+      video {width:40%; border: 3px solid #fff; background: #fff; box-shadow: 0 0 2px rgba(0,0,0,0.8);}
+      #localVideo {transform: rotateX(2deg) rotateY(-10deg) rotateZ(-2deg);}
+      #remoteVideo {transform: rotateX(2deg) rotateY(10deg) rotateZ(2deg);}
+      h5 {margin-top: 25px;}
     </style>
   </head>
   <body>
@@ -88,7 +93,7 @@
 
           newRoomButton.onclick = function (event) {
             event.preventDefault(); // Stop the form from submitting.
-            var pc = new RTCPeerConnection({
+            var pc = new RTCPeerConnection({ // Set up an RTCPeerConnection object.
               iceServers: [
                 {url: "stun:23.21.150.121"},
                 {url: "stun:stun.l.google.com:19302"},
@@ -98,10 +103,16 @@
                   username: 'webrtc@live.com'
                 }
               ]
-            }); // Set up an RTCPeerConnection object.
+            });
+            var ice;
+            pc.onicecandidate = function (event) {
+              if (event.candidate) {
+                ice = event.candidate;
+              }
+            }
             pc.onaddstream = function(media) { // This function runs when the remote stream is added.
-              console.log(media);
-              remoteVideo.src = media.stream;
+              var url = window.URL.createObjectURL(media.stream); // This makes the stream available to the remote video element.
+              remoteVideo.src = url;
             }
             navigator.getUserMedia({ // Grab webcam.
               video: true,
@@ -112,7 +123,7 @@
               pc.createOffer(function(offer) { // Create and send the session offer to the server.
                 var localSD = new RTCSessionDescription(offer); // Make a new RTCSessionDescription.
                 pc.setLocalDescription(localSD, function() {
-                  socket.emit('outgoing offer', { offer: offer, room: newRoomName.value }); // Send the offer over socket.io along with the 'New Room Name'.
+                  socket.emit('outgoing offer', { offer: offer, room: newRoomName.value, ice: ice }); // Send the offer over socket.io along with the 'New Room Name'.
                   socket.on('incoming answer', function (data) { // Listen for when the answer returns.
                     console.log(data);
                     var remoteSD = new RTCSessionDescription(data.answer);
@@ -129,7 +140,7 @@
                     socket.emit('room closed', { room: newRoomName.value }); // Tell the serve you closed the room.
                   };
                 }, fail); // Handle error.
-              }, fail); // Handle error.
+              }, fail, { offerToReceiveVideo: true, offerToReceiveAudio: true }); // Handle error. / Pass in constaints.
               var url = window.URL.createObjectURL(localMediaStream); // This makes localMediaStream available to the local video element.
               localVideo.src = url; // Go ahead and add it to the local video element.
             }, function (error) {
@@ -155,6 +166,10 @@
             event.preventDefault(); // Stop the form from submitting.
             socket.emit('room joined', { room: joinRoomName.value }); // Send along the room name.
           }
+
+          socket.on('no room', function (data) { // If the user tries to join a none-existing room, let them know.
+            console.log(data);
+          });
 
 
           /*
@@ -185,6 +200,8 @@
                 pc.createAnswer(function(answer) { // Create and send the session answer to the server.
                   var localSD = new RTCSessionDescription(answer); // Create local RTCSessionDescription.
                   pc.setLocalDescription(localSD, function () {
+                    var candidate = new RTCIceCandidate();
+                    pc.addIceCandidate(candidate);
                     socket.emit('outgoing answer', { answer: answer, room: data.room}); // Send the answer over socket.io.
                     newRoomButton.setAttribute('disabled', true); // Disable the inputs and buttons while waiting.
                     joinRoomButton.setAttribute('disabled', true);
@@ -197,7 +214,7 @@
                       socket.emit('room closed', { room: newRoomName.value }); // Tell the serve you closed the room.
                     };
                   });
-                }, fail); // Handle error.
+                }, fail, { offerToReceiveAudio: true, offerToReceiveVideo: true }); // Handle error. / Pass in constraints.
               }, fail); // Handle error.
               var url = window.URL.createObjectURL(localMediaStream); // This makes localMediaStream available to the local video element.
               localVideo.src = url; // Go ahead and add it to the local video element.
