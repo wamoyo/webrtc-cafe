@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WebRTC within LAN</title>
+    <meta name="description" content="WebRTC within LAN">
+    <meta name="viewport" content="width=device-width">
+    <script src="/socket.io/socket.io.js"></script>
+    <style type="text/css">
+      html {font-size: 100%;}
+      * {box-sizing: border-box; margin:0.25em;}
+      video {width:40%; box-shadow: 0 0 2px rgba(0,0,0,0.8);}
+    </style>
+  </head>
+  <body>
+
+    <h1>Video Café</h1>
+
+    <video id="localVideo" muted autoplay></video>
+    <video id="remoteVideo" autoplay></video>
+    <!-- We've only muted one video, so it's possible you'll still have feedback noise. -->
+
+    <h5>Enter a room, or make a new one...</h5>
+
+    <form>
+      <input id="new-room" type="text" placeholder="Room name..." value="">
+      <input id="new-room-button" type="submit" value="Create New Room">
+    </form>
+
+    <form>
+      <input id="join-room" type="text" placeholder="Room name..." value="">
+      <input id="join-room-button" type="submit" value="Join Room">
+    </form>
+
+    <button id="end-session-button">End Session</button>
+
+    <script>
+      ;(function () {
+        "use strict";
+        window.addEventListener('load', function (event) {
+
+          // Testing to make sure socket.io is working...
+          var socket = io('http://192.168.1.2');
+          socket.on('server', function (data) {
+            console.log(data);
+          });
+          socket.emit('client', { message: 'Hi!' });
+
+          // Shims for WebRTC
+          var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+          var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.RTCIceCandidate;
+          var RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+          navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
+
+          // Grab the inputs, buttons, and video elements.
+          var localVideo = document.getElementById('localVideo'),
+              remoteVideo = document.getElementById('remoteVideo'),
+              newRoomName = document.getElementById('new-room'),
+              newRoomButton = document.getElementById('new-room-button'),
+              joinRoomName = document.getElementById('join-room'),
+              joinRoomButton = document.getElementById('join-room-button'),
+              endSessionButton = document.getElementById('end-session-button');
+
+          // Set the buttons to disabled and the inputs to enabled by default.
+          function setDefaults () {
+            newRoomButton.setAttribute('disabled', true);
+            joinRoomButton.setAttribute('disabled', true);
+            endSessionButton.setAttribute('disabled', true);
+            newRoomName.removeAttribute('disabled');
+            joinRoomName.removeAttribute('disabled');
+            checkInput(newRoomName, newRoomButton);
+            checkInput(joinRoomName, joinRoomButton);
+          }
+          setDefaults();
+
+          // When the user types into one of the input fields, enable the respective button.
+          function checkInput (input, button) { // Little bit of magic here in the return statement.
+            input.value.match(/\S/g) ? button.removeAttribute('disabled') : button.setAttribute('disabled', true);
+            return function () { input.value.match(/\S/g) ? button.removeAttribute('disabled') : button.setAttribute('disabled', true); }
+          }
+          newRoomName.onkeyup = checkInput(newRoomName, newRoomButton);
+          joinRoomName.onkeyup = checkInput(joinRoomName, joinRoomButton);
+
+
+          /*
+           * When the user clicks the 'Create New Room' button...
+           */
+
+          newRoomButton.onclick = function (event) {
+            event.preventDefault(); // Stop the form from submitting.
+            var pc = new RTCPeerConnection({
+              iceServers: [
+                {url: "stun:23.21.150.121"},
+                {url: "stun:stun.l.google.com:19302"},
+                {
+                  url: 'turn:numb.viagenie.ca',
+                  credential: 'muazkh',
+                  username: 'webrtc@live.com'
+                }
+              ]
+            }); // Set up an RTCPeerConnection object.
+            pc.onaddstream = function(media) { // This function runs when the remote stream is added.
+              console.log(media);
+              remoteVideo.src = media.stream;
+            }
+            navigator.getUserMedia({ // Grab webcam.
+              video: true,
+              audio: true
+            }, function (localMediaStream) { // localMediaStream is the webcam/mic feed.
+              window.stream = localMediaStream; // Make stream available to console (optional).
+              pc.addStream(localMediaStream); // Add local stream to the RTCPeerConnection.
+              pc.createOffer(function(offer) { // Create and send the session offer to the server.
+                var localSD = new RTCSessionDescription(offer); // Make a new RTCSessionDescription.
+                pc.setLocalDescription(localSD, function() {
+                  socket.emit('outgoing offer', { offer: offer, room: newRoomName.value }); // Send the offer over socket.io along with the 'New Room Name'.
+                  socket.on('incoming answer', function (data) { // Listen for when the answer returns.
+                    console.log(data);
+                    var remoteSD = new RTCSessionDescription(data.answer);
+                    pc.setRemoteDescription(remoteSD, function() { }, fail);
+                  });
+                  newRoomButton.setAttribute('disabled', true); // Disable the inputs and buttons while waiting.
+                  joinRoomButton.setAttribute('disabled', true);
+                  newRoomName.setAttribute('disabled', true);
+                  joinRoomName.setAttribute('disabled', true);
+                  endSessionButton.removeAttribute('disabled'); // Enable the 'End Session' Button.
+                  endSessionButton.onclick = function () { // If the user clicks 'End Session' kill the videos.
+                    fail();
+                    localMediaStream.stop();
+                    socket.emit('room closed', { room: newRoomName.value }); // Tell the serve you closed the room.
+                  };
+                }, fail); // Handle error.
+              }, fail); // Handle error.
+              var url = window.URL.createObjectURL(localMediaStream); // This makes localMediaStream available to the local video element.
+              localVideo.src = url; // Go ahead and add it to the local video element.
+            }, function (error) {
+              console.log("navigator.getUserMedia error: ", error);
+            });
+
+            // Fail helper function.
+            function fail(error) {
+              console.log('Ending Session or Erroring Out', error);
+              localVideo.pause();
+              remoteVideo.pause();
+              pc.close();
+              setDefaults();
+            }
+          };
+
+
+          /*
+           * When the user clicks the 'Join Room' button...
+           */
+
+          joinRoomButton.onclick = function (event) {
+            event.preventDefault(); // Stop the form from submitting.
+            socket.emit('room joined', { room: joinRoomName.value }); // Send along the room name.
+          }
+
+
+          /*
+           * Incoming Offer
+           */
+
+          socket.on('incoming offer', function (data) {
+            console.log(data); // Received offer.
+            var pc = new RTCPeerConnection({
+              iceServers: [
+                {url: "stun:23.21.150.121"},
+                {url: "stun:stun.l.google.com:19302"},
+                {
+                  url: 'turn:numb.viagenie.ca',
+                  credential: 'muazkh',
+                  username: 'webrtc@live.com'
+                }
+              ]
+            });
+            navigator.getUserMedia({ // Grab webcam.
+              video: true,
+              audio: true
+            }, function (localMediaStream) { // localMediaStream is the webcam/mic feed.
+              window.stream = localMediaStream; // Make stream available to console (optional).
+              pc.addStream(localMediaStream); // Add local stream to the RTCPeerConnection.
+              var remoteSD = new RTCSessionDescription(data.offer); // Make a RTCSessionDescription with the offer.
+              pc.setRemoteDescription(remoteSD, function() { // Set remote description.
+                pc.createAnswer(function(answer) { // Create and send the session answer to the server.
+                  var localSD = new RTCSessionDescription(answer); // Create local RTCSessionDescription.
+                  pc.setLocalDescription(localSD, function () {
+                    socket.emit('outgoing answer', { answer: answer, room: data.room}); // Send the answer over socket.io.
+                    newRoomButton.setAttribute('disabled', true); // Disable the inputs and buttons while waiting.
+                    joinRoomButton.setAttribute('disabled', true);
+                    newRoomName.setAttribute('disabled', true);
+                    joinRoomName.setAttribute('disabled', true);
+                    endSessionButton.removeAttribute('disabled'); // Enable the 'End Session' Button.
+                    endSessionButton.onclick = function () { // If the user clicks 'End Session' kill the videos.
+                      fail();
+                      localMediaStream.stop();
+                      socket.emit('room closed', { room: newRoomName.value }); // Tell the serve you closed the room.
+                    };
+                  });
+                }, fail); // Handle error.
+              }, fail); // Handle error.
+              var url = window.URL.createObjectURL(localMediaStream); // This makes localMediaStream available to the local video element.
+              localVideo.src = url; // Go ahead and add it to the local video element.
+            }, function (error) {
+              console.log("navigator.getUserMedia error: ", error);
+            });
+
+            // Fail helper function.
+            function fail(stream) {
+              console.log('Ending Session or Erroring Out');
+              localVideo.pause();
+              remoteVideo.pause();
+              pc.close();
+              setDefaults();
+            }
+          });
+
+
+        }, false);
+      }());
+    </script>
+  </body>
+</html>
+
