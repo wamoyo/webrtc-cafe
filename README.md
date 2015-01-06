@@ -73,5 +73,5 @@ We'll use a server for this, Node.js + Socket.io in our case.
 
 ### Establishing a connection within a Local Area Network
 
-### Adding signaling to get WebRTC working across the Internet
+### Adding signalling to get WebRTC working across the Internet
 
