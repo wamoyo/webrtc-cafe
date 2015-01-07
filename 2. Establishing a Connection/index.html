@@ -44,7 +44,7 @@
         window.addEventListener('load', function (event) {
 
           // Testing to make sure socket.io is working...
-          var socket = io('http://thinkmachine');
+          var socket = io('http://localhost');
           socket.on('server', function (data) {
             console.log(data);
           });
