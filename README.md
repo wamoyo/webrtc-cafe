@@ -75,3 +75,5 @@ We'll use a server for this, Node.js + Socket.io in our case.
 
 ### Adding signalling to get WebRTC working across the Internet
 
+**Wow, this is proving to be hilariously complicated** Check out https://github.com/wamoyo/webrtc-cafe/tree/master/2.1%20Establishing%20a%20Connection%20%28within%20a%20Local%20Area%20Network%29 for the 'almost working' verion. Works in two Firefox Tabs, kinda maybe...for now : )
+

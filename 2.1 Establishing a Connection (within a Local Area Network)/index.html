@@ -23,7 +23,7 @@
 
     <video id="localVideo" muted autoplay></video>
     <video id="remoteVideo" autoplay></video>
-    <!-- We've only muted one video, so it's possible you'll still have feedback noise. -->
+    <!-- We've only muted one video, so it's possible there will still be feedback noise. -->
 
     <h5>Enter a room, or make a new one...</h5>
 
@@ -104,13 +104,13 @@
                 }
               ]
             });
-            var ice;
-            pc.onicecandidate = function (event) {
+            var iceCandidates = [];
+            pc.onicecandidate = function (event) { // Gather ICE Candidates.
               if (event.candidate) {
-                ice = event.candidate;
+                iceCandidates.push(event.candidate);
               }
             }
-            pc.onaddstream = function(media) { // This function runs when the remote stream is added.
+            pc.onaddstream = function (media) { // This function runs when the remote stream is added.
               var url = window.URL.createObjectURL(media.stream); // This makes the stream available to the remote video element.
               remoteVideo.src = url;
             }
@@ -120,14 +120,20 @@
             }, function (localMediaStream) { // localMediaStream is the webcam/mic feed.
               window.stream = localMediaStream; // Make stream available to console (optional).
               pc.addStream(localMediaStream); // Add local stream to the RTCPeerConnection.
-              pc.createOffer(function(offer) { // Create and send the session offer to the server.
-                var localSD = new RTCSessionDescription(offer); // Make a new RTCSessionDescription.
-                pc.setLocalDescription(localSD, function() {
-                  socket.emit('outgoing offer', { offer: offer, room: newRoomName.value, ice: ice }); // Send the offer over socket.io along with the 'New Room Name'.
+              pc.createOffer( function (offer) { // Create and send the session offer to the server.
+                var localSessionDescription = new RTCSessionDescription(offer); // Make a new RTCSessionDescription.
+                pc.setLocalDescription(localSessionDescription, function () {
+                  socket.emit('outgoing offer', { offer: offer, room: newRoomName.value }); // Send the offer over socket.io along with the 'New Room Name'.
                   socket.on('incoming answer', function (data) { // Listen for when the answer returns.
-                    console.log(data);
-                    var remoteSD = new RTCSessionDescription(data.answer);
-                    pc.setRemoteDescription(remoteSD, function() { }, fail);
+                    socket.emit('outgoing offerer ice', { ice: iceCandidates, room: newRoomName.value });
+                    socket.on('incoming answerer ice', function (data) {
+                      console.log('Incoming answerer ice candidates ', data);
+                       pc.addIceCandidate(new RTCIceCandidate(data.ice[2]), function () {
+                         console.log('Ice Candidate Added', pc.iceConnectionState);
+                         console.log('DONE, NO MORE SINGALLING!!!');
+                       }, fail);
+                    });
+                    pc.setRemoteDescription(new RTCSessionDescription(data.answer), function () { }, fail);
                   });
                   newRoomButton.setAttribute('disabled', true); // Disable the inputs and buttons while waiting.
                   joinRoomButton.setAttribute('disabled', true);
@@ -177,7 +183,6 @@
            */
 
           socket.on('incoming offer', function (data) {
-            console.log(data); // Received offer.
             var pc = new RTCPeerConnection({
               iceServers: [
                 {url: "stun:23.21.150.121"},
@@ -189,20 +194,31 @@
                 }
               ]
             });
+            var iceCandidates = [];
+            pc.onicecandidate = function (event) { // Gather ICE Candidates.
+              if (event.candidate) {
+                iceCandidates.push(event.candidate);
+              }
+            }
             navigator.getUserMedia({ // Grab webcam.
               video: true,
               audio: true
             }, function (localMediaStream) { // localMediaStream is the webcam/mic feed.
               window.stream = localMediaStream; // Make stream available to console (optional).
               pc.addStream(localMediaStream); // Add local stream to the RTCPeerConnection.
-              var remoteSD = new RTCSessionDescription(data.offer); // Make a RTCSessionDescription with the offer.
-              pc.setRemoteDescription(remoteSD, function() { // Set remote description.
-                pc.createAnswer(function(answer) { // Create and send the session answer to the server.
-                  var localSD = new RTCSessionDescription(answer); // Create local RTCSessionDescription.
-                  pc.setLocalDescription(localSD, function () {
-                    var candidate = new RTCIceCandidate();
-                    pc.addIceCandidate(candidate);
+              var remoteSessionDescription = new RTCSessionDescription(data.offer); // Make a RTCSessionDescription with the offer.
+              pc.setRemoteDescription(remoteSessionDescription, function() { // Set remote description.
+                pc.createAnswer( function (answer) { // Create and send the session answer to the server.
+                  var localSessionDescription = new RTCSessionDescription(answer); // Create local RTCSessionDescription.
+                  pc.setLocalDescription(localSessionDescription, function () {
                     socket.emit('outgoing answer', { answer: answer, room: data.room}); // Send the answer over socket.io.
+                    socket.on('incoming offerer ice', function (data) { // Wait for ICE Candidates.
+                      console.log('Incoming offerer ice candidates ', data);
+                        pc.addIceCandidate(new RTCIceCandidate(data.ice[3]), function () {
+                          console.log('Ice Candidate Added', pc.iceConnectionState);
+                          socket.emit('outgoing answerer ice', { ice: iceCandidates, room: joinRoomName.value });
+                        }, fail);
+                    });
                     newRoomButton.setAttribute('disabled', true); // Disable the inputs and buttons while waiting.
                     joinRoomButton.setAttribute('disabled', true);
                     newRoomName.setAttribute('disabled', true);

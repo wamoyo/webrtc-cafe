@@ -36,13 +36,13 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('outgoing offer', function (data) {
     console.log('New Room!', data.room);
-    rooms[data.room] = data;
-    rooms[data.room].socket = socket;
+    rooms[data.room] = {};
+    rooms[data.room].offererSocket = socket;
+    rooms[data.room].offer = data.offer;
   });
 
   socket.on('room joined', function (data) {
     if (rooms[data.room]) {
-      console.log('Room Joined!', data.room);
       socket.emit('incoming offer', { offer: rooms[data.room].offer, room: data.room });
     } else {
       console.log('Room does\'t exist', data.room);
@@ -52,7 +52,20 @@ io.sockets.on('connection', function (socket) {
 
   socket.on('outgoing answer', function (data) {
     console.log('Sending answer ', data.answer);
-    rooms[data.room].socket.emit('incoming answer', { answer: data.answer, room: data.room });
+    rooms[data.room].answererSocket = socket;
+    rooms[data.room].offererSocket.emit('incoming answer', { answer: data.answer, room: data.room });
+  });
+
+  socket.on('outgoing offerer ice', function (data) {
+    console.log('ICE', data);
+    rooms[data.room].ice = data.ice;
+    rooms[data.room].answererSocket.emit('incoming offerer ice', data);
+  });
+
+  socket.on('outgoing answerer ice', function (data) {
+    console.log('ICE', data);
+    rooms[data.room].ice = data.ice;
+    rooms[data.room].offererSocket.emit('incoming answerer ice', data);
   });
 
   socket.on('room closed', function (data) {
