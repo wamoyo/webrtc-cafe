@@ -86,11 +86,17 @@ I'd like to list out some of the critical APIs here, with links to the spec for 
 
 Until then, the working example is in folder "2. Establishing a Connection". It's got three files. A `package.json` file, a `server.js` file and an `index.html` file. There are a few dependencies. To get things moving do this just do:
 
-`npm install`
+```
+clone git@github.com:wamoyo/webrtc-cafe.git
 
-then
+cd webrtc-cafe/
 
-`node server.js`
+npm install
+
+cd 2.\ Establishing\ a\ Connection/
+
+node server.js
+```
 
 and open up http://localhost:3000
 
