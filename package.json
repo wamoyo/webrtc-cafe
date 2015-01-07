@@ -1,0 +1,15 @@
+{
+  "name": "webrtcafe",
+  "description": "A bare bones demo of WebRTC built with Node.js, Socket.io, HTML, CSS, and JavaScript",
+  "version": "0.5.0",
+  "dependencies": {
+    "express": "^4.10.7",
+    "socket.io": "^1.2.1"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}

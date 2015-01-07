@@ -18,8 +18,6 @@ WebRTC has four main tasks:
 
 1. [Acquire Video and Audio](#1-acquiring-video-and-audio)
 2. [Establish a connection between peers](#2-establishing-a-connection-between-peers)
-  1. [Within a LAN](#)
-  2. [Across the Internet](#) 
 3. [Send and receive audio and video data](#)
 4. [Send and receive arbitrary data](#)
 
@@ -67,13 +65,36 @@ Check out the spec on _Media Capture and Streams_ for full details on the **Cont
 
 ## 2. Establishing a Connection Between Peers
 
-Okay, not let's get to the tricky awesome stuff. Although, WebRTC is peer-to-peer, you still need a way to identify a few things about the peer you're connecting to, like where they are in the network, how to deal with their firewall if they have one, what type of video codec they support and so forth. Servers are used to negotiate all this, and establish a connection between peers. The terms used for this is called **Signaling**. You'll also need a way for your app to know who wants to talk to who...
+Okay, now let's get to the tricky, awesome stuff. Although, WebRTC is peer-to-peer, you still need a way to identify a few things about the peer you're connecting to, like where they are in the network, how to deal with their firewall if they have one, what type of video codec they support and so forth. Servers are used to negotiate all this, and establish a connection between peers. _You could deliver the metadata back and forth yourself, but the subways in New York are terrible crowded this time of year_. The term used for this is called **Signaling**.
 
 We'll use a server for this, Node.js + Socket.io in our case.
 
-### Establishing a connection within a Local Area Network
+The exchange is pretty straight forward in theory, quite a few lines of code in practice.
 
-### Adding signalling to get WebRTC working across the Internet
+##### The WebRTC Flow
 
-**Wow, this is proving to be hilariously complicated** Check out https://github.com/wamoyo/webrtc-cafe/tree/master/2.1%20Establishing%20a%20Connection%20%28within%20a%20Local%20Area%20Network%29 for the 'almost working' verion. Works in two Firefox Tabs, kinda maybe...for now : )
+Let's say Lebron and Melo are trying to get in touch and make plans to go watch the US Open.
+
+1. Lebron offers up a connection (it's got some data about his browser, network, and so on).
+2. Melo gets it, and answers with some meta dat of his own.
+3. Lebron gets the answer, and generates some ICE Candidates sending them over.
+4. Melo gets them and sends back his ICE Candidates until a connection is established.
+
+### The WebRTC APIs
+
+I'd like to list out some of the critical APIs here, with links to the spec for the rest.
+
+Until then, the working example is in folder "2. Establishing a Connection". It's got three files. A `package.json` file, a `server.js` file and an `index.html` file. There are a few dependencies. To get things moving do this just do:
+
+`npm install`
+
+then
+
+`node server.js`
+
+and open up http://localhost:3000
+
+The code is heavily commented.
+
+Will continue on this sometime, it is currently working fine on the lastest Firefox.
 

@@ -44,7 +44,7 @@
         window.addEventListener('load', function (event) {
 
           // Testing to make sure socket.io is working...
-          var socket = io('http://localhost');
+          var socket = io('http://thinkmachine');
           socket.on('server', function (data) {
             console.log(data);
           });
@@ -128,10 +128,14 @@
                     socket.emit('outgoing offerer ice', { ice: iceCandidates, room: newRoomName.value });
                     socket.on('incoming answerer ice', function (data) {
                       console.log('Incoming answerer ice candidates ', data);
-                       pc.addIceCandidate(new RTCIceCandidate(data.ice[2]), function () { // FIXME Which ICE Candidate do I use?
-                         console.log('Ice Candidate Added', pc.iceConnectionState);
-                         console.log('DONE, NO MORE SINGALLING!!!');
-                       }, fail);
+                      var i = 0;
+                      while (i < data.ice.length) { // Add in the ICE Candidates.
+                        pc.addIceCandidate(new RTCIceCandidate(data.ice[i]), function () {
+                          console.log('Ice Candidate Added', pc.iceConnectionState);
+                          console.log('DONE, NO MORE SINGALLING!!!');
+                        }, fail);
+                        i += 1;
+                      }
                     });
                     pc.setRemoteDescription(new RTCSessionDescription(data.answer), function () { }, fail);
                   });
@@ -219,10 +223,14 @@
                     socket.emit('outgoing answer', { answer: answer, room: data.room}); // Send the answer over socket.io.
                     socket.on('incoming offerer ice', function (data) { // Wait for ICE Candidates.
                       console.log('Incoming offerer ice candidates ', data);
+                      var i = 0;
+                      while (i < data.ice.length) { // Add in the ICE Candidates.
                         pc.addIceCandidate(new RTCIceCandidate(data.ice[3]), function () { // FIXME Which ICE Candidate do I use?
                           console.log('Ice Candidate Added', pc.iceConnectionState);
                           socket.emit('outgoing answerer ice', { ice: iceCandidates, room: joinRoomName.value });
                         }, fail);
+                       i += 1;
+                      }
                     });
                     newRoomButton.setAttribute('disabled', true); // Disable the inputs and buttons while waiting.
                     joinRoomButton.setAttribute('disabled', true);
