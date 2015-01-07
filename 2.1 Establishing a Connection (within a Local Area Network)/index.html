@@ -6,46 +6,45 @@
     <meta name="description" content="WebRTC within LAN">
     <meta name="viewport" content="width=device-width">
     <script src="/socket.io/socket.io.js"></script>
+
     <!-- tiny bit of styling -->
     <style type="text/css">
       * {box-sizing: border-box; margin:0.25em;}
       html {font-size: 100%; background: #f8f8f8; height: 100%; margin: 0;}
       body { min-height: 100%; box-shadow: inset 0 0 6px rgba(0,0,0,0.8); margin: 0; padding: 25px;}
       video {width:40%; border: 3px solid #fff; background: #fff; box-shadow: 0 0 2px rgba(0,0,0,0.8);}
-      #localVideo {transform: rotateX(2deg) rotateY(-10deg) rotateZ(-2deg);}
-      #remoteVideo {transform: rotateX(2deg) rotateY(10deg) rotateZ(2deg);}
+      #localVideo {transform: scaleX(-1) rotateX(2deg) rotateY(10deg) rotateZ(2deg); transition: 1s;}
+      #remoteVideo {transform: rotateX(2deg) rotateY(10deg) rotateZ(2deg); transition: 1s;}
       h5 {margin-top: 25px;}
     </style>
+
   </head>
   <body>
 
+    <!-- Our little bit of HTML -->
     <h1>Video Café</h1>
-
-    <video id="localVideo" muted autoplay></video>
+    <video id="localVideo" autoplay></video>
     <video id="remoteVideo" autoplay></video>
-    <!-- We've only muted one video, so it's possible there will still be feedback noise. -->
-
+    <!-- If you get lots of feedback add a 'muted' attribute to the localVideo above. -->
     <h5>Enter a room, or make a new one...</h5>
-
     <form>
       <input id="new-room" type="text" placeholder="Room name..." value="">
       <input id="new-room-button" type="submit" value="Create New Room">
     </form>
-
     <form>
       <input id="join-room" type="text" placeholder="Room name..." value="">
       <input id="join-room-button" type="submit" value="Join Room">
     </form>
-
     <button id="end-session-button">End Session</button>
 
+    <!-- This is where the WebRTC Magic Happens -->
     <script>
       ;(function () {
         "use strict";
         window.addEventListener('load', function (event) {
 
           // Testing to make sure socket.io is working...
-          var socket = io('http://192.168.1.2');
+          var socket = io('http://localhost');
           socket.on('server', function (data) {
             console.log(data);
           });
@@ -104,6 +103,7 @@
                 }
               ]
             });
+            window.pc = pc;
             var iceCandidates = [];
             pc.onicecandidate = function (event) { // Gather ICE Candidates.
               if (event.candidate) {
@@ -128,7 +128,7 @@
                     socket.emit('outgoing offerer ice', { ice: iceCandidates, room: newRoomName.value });
                     socket.on('incoming answerer ice', function (data) {
                       console.log('Incoming answerer ice candidates ', data);
-                       pc.addIceCandidate(new RTCIceCandidate(data.ice[2]), function () {
+                       pc.addIceCandidate(new RTCIceCandidate(data.ice[2]), function () { // FIXME Which ICE Candidate do I use?
                          console.log('Ice Candidate Added', pc.iceConnectionState);
                          console.log('DONE, NO MORE SINGALLING!!!');
                        }, fail);
@@ -194,11 +194,16 @@
                 }
               ]
             });
+            window.pc = pc;
             var iceCandidates = [];
             pc.onicecandidate = function (event) { // Gather ICE Candidates.
               if (event.candidate) {
                 iceCandidates.push(event.candidate);
               }
+            }
+            pc.onaddstream = function (media) { // This function runs when the remote stream is added.
+              var url = window.URL.createObjectURL(media.stream); // This makes the stream available to the remote video element.
+              remoteVideo.src = url;
             }
             navigator.getUserMedia({ // Grab webcam.
               video: true,
@@ -214,7 +219,7 @@
                     socket.emit('outgoing answer', { answer: answer, room: data.room}); // Send the answer over socket.io.
                     socket.on('incoming offerer ice', function (data) { // Wait for ICE Candidates.
                       console.log('Incoming offerer ice candidates ', data);
-                        pc.addIceCandidate(new RTCIceCandidate(data.ice[3]), function () {
+                        pc.addIceCandidate(new RTCIceCandidate(data.ice[3]), function () { // FIXME Which ICE Candidate do I use?
                           console.log('Ice Candidate Added', pc.iceConnectionState);
                           socket.emit('outgoing answerer ice', { ice: iceCandidates, room: joinRoomName.value });
                         }, fail);
