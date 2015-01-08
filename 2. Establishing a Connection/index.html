@@ -23,9 +23,9 @@
 
     <!-- Our little bit of HTML -->
     <h1>Video Café</h1>
-    <video id="localVideo" autoplay></video>
+    <video id="localVideo" muted autoplay></video>
     <video id="remoteVideo" autoplay></video>
-    <!-- If you get lots of feedback add a 'muted' attribute to the localVideo above. -->
+    <!-- Adding the 'muted' attribute to the localVideo above prevents feedback. -->
     <h5>Enter a room, or make a new one...</h5>
     <form>
       <input id="new-room" type="text" placeholder="Room name..." value="">
@@ -44,7 +44,7 @@
         window.addEventListener('load', function (event) {
 
           // Testing to make sure socket.io is working...
-          var socket = io('http://localhost');
+          var socket = io('http://localhost'); // If you're testing in your LAN use internal IP (outside, use external IP, but be remember to open a port for your firewall)
           socket.on('server', function (data) {
             console.log(data);
           });
@@ -120,6 +120,11 @@
             }, function (localMediaStream) { // localMediaStream is the webcam/mic feed.
               window.stream = localMediaStream; // Make stream available to console (optional).
               pc.addStream(localMediaStream); // Add local stream to the RTCPeerConnection.
+              if (!!window.chrome && !(!!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0)) { // set up constraints, Chrome still takes old form.
+                var constraints = { mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: true }};
+              } else {
+                var constraints = { offerToReceiveVideo: true, offerToReceiveAudio: true };
+              }
               pc.createOffer( function (offer) { // Create and send the session offer to the server.
                 var localSessionDescription = new RTCSessionDescription(offer); // Make a new RTCSessionDescription.
                 pc.setLocalDescription(localSessionDescription, function () {
@@ -150,7 +155,7 @@
                     socket.emit('room closed', { room: newRoomName.value }); // Tell the serve you closed the room.
                   };
                 }, fail); // Handle error.
-              }, fail, { offerToReceiveVideo: true, offerToReceiveAudio: true }); // Handle error. / Pass in constaints.
+              }, fail, constraints); // Handle error. / Pass in constaints.
               var url = window.URL.createObjectURL(localMediaStream); // This makes localMediaStream available to the local video element.
               localVideo.src = url; // Go ahead and add it to the local video element.
             }, function (error) {
@@ -217,6 +222,11 @@
               pc.addStream(localMediaStream); // Add local stream to the RTCPeerConnection.
               var remoteSessionDescription = new RTCSessionDescription(data.offer); // Make a RTCSessionDescription with the offer.
               pc.setRemoteDescription(remoteSessionDescription, function() { // Set remote description.
+                if (!!window.chrome && !(!!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0)) { // set up constraints, Chrome still takes old form.
+                  var constraints = { mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: true }};
+                } else {
+                  var constraints = { offerToReceiveVideo: true, offerToReceiveAudio: true };
+                }
                 pc.createAnswer( function (answer) { // Create and send the session answer to the server.
                   var localSessionDescription = new RTCSessionDescription(answer); // Create local RTCSessionDescription.
                   pc.setLocalDescription(localSessionDescription, function () {
@@ -225,7 +235,7 @@
                       console.log('Incoming offerer ice candidates ', data);
                       var i = 0;
                       while (i < data.ice.length) { // Add in the ICE Candidates.
-                        pc.addIceCandidate(new RTCIceCandidate(data.ice[3]), function () { // FIXME Which ICE Candidate do I use?
+                        pc.addIceCandidate(new RTCIceCandidate(data.ice[i]), function () {
                           console.log('Ice Candidate Added', pc.iceConnectionState);
                           socket.emit('outgoing answerer ice', { ice: iceCandidates, room: joinRoomName.value });
                         }, fail);
@@ -243,7 +253,7 @@
                       socket.emit('room closed', { room: newRoomName.value }); // Tell the serve you closed the room.
                     };
                   });
-                }, fail, { offerToReceiveAudio: true, offerToReceiveVideo: true }); // Handle error. / Pass in constraints.
+                }, fail, constraints); // Handle error. / Pass in constaints.
               }, fail); // Handle error.
               var url = window.URL.createObjectURL(localMediaStream); // This makes localMediaStream available to the local video element.
               localVideo.src = url; // Go ahead and add it to the local video element.
